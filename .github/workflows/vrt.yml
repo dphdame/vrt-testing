@@ -60,14 +60,14 @@ jobs:
           retention-days: 30
 
       - name: Commit updated baselines
-        if: inputs.update_baselines == 'true'
+        if: inputs.update_baselines
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add tests/*/baselines/ tests/**/*-snapshots/
+          git add "tests/**/*-snapshots/*.png"
           git diff --staged --quiet || git commit -m "Update VRT baselines from CI"
           git push
 
       - name: Check test results
-        if: steps.tests.outcome == 'failure' && inputs.update_baselines != 'true'
+        if: steps.tests.outcome == 'failure' && !inputs.update_baselines
         run: exit 1
