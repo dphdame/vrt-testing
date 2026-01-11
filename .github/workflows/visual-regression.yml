@@ -1,0 +1,93 @@
+name: Visual Regression Tests
+
+on:
+  # Run on schedule (daily at 8 AM UTC)
+  schedule:
+    - cron: '0 8 * * *'
+  # Run manually
+  workflow_dispatch:
+    inputs:
+      site:
+        description: 'Site to test (all, unstoppable-ink, beatwritersblock, tooearly, caphe)'
+        required: false
+        default: 'all'
+
+jobs:
+  visual-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run all visual regression tests
+        if: ${{ github.event.inputs.site == 'all' || github.event.inputs.site == '' }}
+        run: npx playwright test
+        env:
+          CI: true
+
+      - name: Run site-specific tests
+        if: ${{ github.event.inputs.site != 'all' && github.event.inputs.site != '' }}
+        run: npx playwright test tests/${{ github.event.inputs.site }}/
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+      - name: Upload baseline diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: test-results/**/*-diff.png
+          retention-days: 30
+
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Visual Regression Test Failure - ${new Date().toISOString().split('T')[0]}`;
+            const body = `## Visual Regression Tests Failed
+
+            The scheduled visual regression tests detected differences.
+
+            **Run ID:** ${context.runId}
+            **Workflow:** [View Run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+
+            ### Next Steps
+            1. Download the \`visual-diffs\` artifact to see what changed
+            2. Investigate if changes are intentional or a bug
+            3. If intentional: update baselines with \`npm run update-baselines\`
+            4. If bug: fix the CSS/HTML and re-deploy`;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['visual-regression', 'automated']
+            });

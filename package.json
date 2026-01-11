@@ -1,0 +1,26 @@
+{
+  "name": "vrt-testing",
+  "version": "1.0.0",
+  "description": "Visual Regression Testing for Victoria's websites",
+  "scripts": {
+    "test": "playwright test",
+    "test:unstoppable": "playwright test tests/unstoppable-ink/",
+    "test:beatwriters": "playwright test tests/beatwritersblock/",
+    "test:tooearly": "playwright test tests/tooearly/",
+    "test:caphe": "playwright test tests/caphe/",
+    "update-baselines": "playwright test --update-snapshots",
+    "update-baselines:unstoppable": "playwright test tests/unstoppable-ink/ --update-snapshots",
+    "update-baselines:beatwriters": "playwright test tests/beatwritersblock/ --update-snapshots",
+    "update-baselines:tooearly": "playwright test tests/tooearly/ --update-snapshots",
+    "update-baselines:caphe": "playwright test tests/caphe/ --update-snapshots",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "keywords": [
+    "visual-regression",
+    "testing",
+    "playwright"
+  ]
+}
