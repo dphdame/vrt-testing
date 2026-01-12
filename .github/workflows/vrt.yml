@@ -4,13 +4,27 @@ on:
   schedule:
     # Run daily at 8 AM UTC
     - cron: '0 8 * * *'
+
+  repository_dispatch:
+    types: [site-deployed]
+
   workflow_dispatch:
     inputs:
       update_baselines:
         description: 'Update baseline screenshots'
         required: false
-        default: 'false'
+        default: false
         type: boolean
+      site:
+        description: 'Specific site to test (leave empty for all)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - unstoppable-ink
+          - beatwritersblock
+          - tooearly
+          - caphe
 
 permissions:
   contents: write
@@ -38,14 +52,32 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Determine test scope
+        id: scope
+        run: |
+          # Check for site from repository_dispatch
+          SITE="${{ github.event.client_payload.site }}"
+          # Or from workflow_dispatch
+          if [ -z "$SITE" ]; then
+            SITE="${{ inputs.site }}"
+          fi
+
+          if [ -n "$SITE" ]; then
+            echo "Running tests for: $SITE"
+            echo "test_path=tests/$SITE/" >> $GITHUB_OUTPUT
+          else
+            echo "Running all tests"
+            echo "test_path=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Visual Regression Tests
         id: tests
         continue-on-error: true
         run: |
           if [ "${{ inputs.update_baselines }}" = "true" ]; then
-            npx playwright test --update-snapshots
+            npx playwright test ${{ steps.scope.outputs.test_path }} --update-snapshots
           else
-            npx playwright test
+            npx playwright test ${{ steps.scope.outputs.test_path }}
           fi
 
       - name: Upload test results
