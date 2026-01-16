@@ -12,6 +12,10 @@ on:
         required: false
         default: 'all'
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   visual-tests:
     runs-on: ubuntu-latest
