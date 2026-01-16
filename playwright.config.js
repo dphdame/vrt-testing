@@ -13,7 +13,8 @@ module.exports = defineConfig({
   expect: {
     timeout: 5000,
     toMatchSnapshot: {
-      maxDiffPixelRatio: 0.02,
+      // Allow 5% pixel difference for cross-platform font rendering
+      maxDiffPixelRatio: 0.05,
     },
   },
 
